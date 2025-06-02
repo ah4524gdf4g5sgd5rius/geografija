@@ -1,45 +1,110 @@
 <!DOCTYPE html>
 <html lang="lt">
 <head>
-    <meta charset="UTF-8">
-    <title>Lietuvos upės</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <style>
-        #map { height: 100vh; }
-    </style>
+  <meta charset="UTF-8">
+  <title>Lietuvos upių viktorina</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    #map { height: 75vh; width: 100%; }
+    #quiz {
+      padding: 15px;
+      font-family: Arial, sans-serif;
+    }
+    #quiz h2 {
+      margin-top: 10px;
+    }
+    #quiz input[type="text"] {
+      padding: 6px;
+      width: 250px;
+    }
+    #quiz button {
+      padding: 6px 12px;
+      margin-left: 10px;
+    }
+    #result {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
-    <div id="map"></div>
 
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script>
-        // Inicializuojam žemėlapį
-        var map = L.map('map').setView([55.1694, 23.8813], 7);
+<div id="map"></div>
 
-        // Pagrindinis žemėlapio sluoksnis (OpenStreetMap)
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: 'Žemėlapiai © OpenStreetMap bendruomenė',
-        }).addTo(map);
+<div id="quiz">
+  <h2>Upių viktorina</h2>
+  <p>Spėk, kokia čia upė pažymėta žemėlapyje:</p>
+  <input type="text" id="answer" placeholder="Įvesk upės pavadinimą">
+  <button onclick="checkAnswer()">Tikrinti</button>
+  <div id="result"></div>
+</div>
 
-        // Įkeliam GeoJSON su upėmis (galima naudoti savo failą arba nuorodą)
-        fetch('https://raw.githubusercontent.com/openmapdata/lithuania-rivers/main/lithuania-rivers.geojson')
-            .then(response => response.json())
-            .then(data => {
-                L.geoJSON(data, {
-                    style: {
-                        color: 'blue',
-                        weight: 1
-                    },
-                    onEachFeature: function (feature, layer) {
-                        if (feature.properties && feature.properties.name) {
-                            layer.bindPopup("Upė: " + feature.properties.name);
-                        }
-                    }
-                }).addTo(map);
-            })
-            .catch(error => {
-                console.error("Klaida įkeliant upių duomenis:", error);
-            });
-    </script>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+  const map = L.map('map').setView([55.1694, 23.8813], 7);
+
+  // Pagrindinis žemėlapis
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: 'Žemėlapiai © OpenStreetMap bendruomenė',
+  }).addTo(map);
+
+  let currentFeature = null;
+  let quizRivers = [];
+  let activeLayer = null;
+
+  // Įkeliam GeoJSON upes iš GitHub (nereikia nieko lokaliai!)
+  fetch('https://raw.githubusercontent.com/openmapdata/lithuania-rivers/main/lithuania-rivers.geojson')
+    .then(response => response.json())
+    .then(data => {
+      // Surenkam tik tas upes, kurios turi pavadinimus
+      quizRivers = data.features.filter(f => f.properties && f.properties.name);
+
+      // Pradedam pirmą raundą
+      startQuiz();
+    })
+    .catch(err => {
+      alert("Nepavyko įkelti upių duomenų.");
+      console.error(err);
+    });
+
+  function startQuiz() {
+    // Išvalom ankstesnį sluoksnį, jei yra
+    if (activeLayer) {
+      map.removeLayer(activeLayer);
+    }
+
+    // Parenkam atsitiktinę upę
+    currentFeature = quizRivers[Math.floor(Math.random() * quizRivers.length)];
+
+    // Pažymim raudonai
+    activeLayer = L.geoJSON(currentFeature, {
+      style: { color: 'red', weight: 3 }
+    }).addTo(map);
+
+    map.fitBounds(activeLayer.getBounds());
+  }
+
+  function checkAnswer() {
+    const userInput = document.getElementById('answer').value.trim().toLowerCase();
+    const correctAnswer = currentFeature.properties.name.toLowerCase();
+    const resultDiv = document.getElementById('result');
+
+    if (userInput === correctAnswer) {
+      resultDiv.style.color = 'green';
+      resultDiv.textContent = '✅ Teisingai! Tai ' + currentFeature.properties.name + '.';
+    } else {
+      resultDiv.style.color = 'red';
+      resultDiv.textContent = '❌ Neteisingai. Tai buvo: ' + currentFeature.properties.name + '.';
+    }
+
+    // Automatiškai naujas klausimas po 4 sek.
+    setTimeout(() => {
+      document.getElementById('answer').value = '';
+      resultDiv.textContent = '';
+      startQuiz();
+    }, 4000);
+  }
+</script>
+
 </body>
 </html>
