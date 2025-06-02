@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8">
+    <title>Lietuvos upės</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map { height: 100vh; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        // Inicializuojam žemėlapį
+        var map = L.map('map').setView([55.1694, 23.8813], 7);
+
+        // Pagrindinis žemėlapio sluoksnis (OpenStreetMap)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: 'Žemėlapiai © OpenStreetMap bendruomenė',
+        }).addTo(map);
+
+        // Įkeliam GeoJSON su upėmis (galima naudoti savo failą arba nuorodą)
+        fetch('https://raw.githubusercontent.com/openmapdata/lithuania-rivers/main/lithuania-rivers.geojson')
+            .then(response => response.json())
+            .then(data => {
+                L.geoJSON(data, {
+                    style: {
+                        color: 'blue',
+                        weight: 1
+                    },
+                    onEachFeature: function (feature, layer) {
+                        if (feature.properties && feature.properties.name) {
+                            layer.bindPopup("Upė: " + feature.properties.name);
+                        }
+                    }
+                }).addTo(map);
+            })
+            .catch(error => {
+                console.error("Klaida įkeliant upių duomenis:", error);
+            });
+    </script>
+</body>
+</html>
