@@ -2,29 +2,32 @@
 <html lang="lt">
 <head>
   <meta charset="UTF-8">
-  <title>Kur yra ežeras? - Viktorinų žemėlapis</title>
+  <title>Atspėk ežero pavadinimą</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
-    body { font-family: Arial, sans-serif; }
-    #map { height: 75vh; width: 100%; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    #map { height: 80vh; }
     #quiz {
       padding: 10px;
-      background-color: #f2f2f2;
-    }
-    #question {
-      font-size: 1.2em;
-      margin-bottom: 10px;
+      background: #f0f0f0;
     }
     #result {
       margin-top: 10px;
       font-weight: bold;
+    }
+    select {
+      padding: 5px;
+      font-size: 16px;
     }
   </style>
 </head>
 <body>
 
 <div id="quiz">
-  <div id="question">Kur yra ežeras: <strong id="lakeName">...</strong>?</div>
+  <div><strong>Kas čia per ežeras?</strong></div>
+  <select id="guessSelect">
+    <option value="">-- Pasirinkti --</option>
+  </select>
   <div id="result"></div>
 </div>
 <div id="map"></div>
@@ -33,12 +36,10 @@
 <script>
   const map = L.map('map').setView([55.2, 24.0], 7);
 
-  // Pagrindinis žemėlapis
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: 'Žemėlapiai © OpenStreetMap',
+    attribution: '&copy; OpenStreetMap',
   }).addTo(map);
 
-  // 10 ežerų
   const lakes = [
     { name: "Drūkšiai", coords: [55.5936, 26.3303] },
     { name: "Dusia", coords: [54.2839, 23.6878] },
@@ -53,74 +54,43 @@
   ];
 
   let currentLake = null;
-  let guessMarker = null;
-  let answerMarker = null;
+  let marker = null;
+
+  const guessSelect = document.getElementById("guessSelect");
+  const resultDiv = document.getElementById("result");
+
+  // Užpildyti pasirinkimus
+  lakes.forEach(lake => {
+    const opt = document.createElement("option");
+    opt.value = lake.name;
+    opt.textContent = lake.name;
+    guessSelect.appendChild(opt);
+  });
+
+  guessSelect.addEventListener("change", function () {
+    if (!currentLake) return;
+
+    const guess = this.value;
+    if (guess === currentLake.name) {
+      resultDiv.innerHTML = "✅ Teisingai!";
+    } else {
+      resultDiv.innerHTML = `❌ Neteisingai. Tai buvo <strong>${currentLake.name}</strong>.`;
+    }
+
+    // Po 5 sekundžių – naujas ežeras
+    setTimeout(startRound, 5000);
+  });
 
   function startRound() {
-    // Išvalom viską
-    if (guessMarker) map.removeLayer(guessMarker);
-    if (answerMarker) map.removeLayer(answerMarker);
-    document.getElementById('result').textContent = "";
+    resultDiv.textContent = "";
+    guessSelect.value = "";
+
+    if (marker) map.removeLayer(marker);
 
     currentLake = lakes[Math.floor(Math.random() * lakes.length)];
-    document.getElementById('lakeName').textContent = currentLake.name;
+    marker = L.marker(currentLake.coords).addTo(map);
+    marker.bindPopup("Koks tai ežeras?").openPopup();
   }
-
-  // Skaičiuoja atstumą tarp dviejų taškų (Haversine formula)
-  function getDistanceKm(lat1, lon1, lat2, lon2) {
-    const R = 6371; // km
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    const a = Math.sin(dLat / 2) ** 2 +
-              Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-              Math.sin(dLon / 2) ** 2;
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  }
-
-  function toRad(deg) {
-    return deg * Math.PI / 180;
-  }
-
-  map.on('click', function (e) {
-    if (guessMarker) map.removeLayer(guessMarker);
-
-    guessMarker = L.marker(e.latlng, { draggable: false }).addTo(map);
-    guessMarker.bindPopup("Spustelk antrą kartą patvirtinti").openPopup();
-
-    guessMarker.on('click', function () {
-      const userLat = e.latlng.lat;
-      const userLng = e.latlng.lng;
-      const lakeLat = currentLake.coords[0];
-      const lakeLng = currentLake.coords[1];
-
-      const distance = getDistanceKm(userLat, userLng, lakeLat, lakeLng);
-
-      // Rodyti teisingą vietą
-      answerMarker = L.marker([lakeLat, lakeLng], {
-        icon: L.icon({
-          iconUrl: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-          iconSize: [32, 32],
-          iconAnchor: [16, 32]
-        })
-      }).addTo(map).bindPopup("Teisinga vieta: " + currentLake.name);
-
-      // Skaičiuojame taškus (kuo arčiau, tuo daugiau)
-      let score = 0;
-      if (distance < 5) score = 10;
-      else if (distance < 15) score = 8;
-      else if (distance < 30) score = 6;
-      else if (distance < 50) score = 4;
-      else if (distance < 100) score = 2;
-      else score = 0;
-
-      const resultText = `Atstumas: ${distance.toFixed(1)} km. Taškai: ${score}/10.`;
-
-      document.getElementById('result').innerHTML = resultText;
-
-      setTimeout(startRound, 5000);
-    });
-  });
 
   startRound();
 </script>
