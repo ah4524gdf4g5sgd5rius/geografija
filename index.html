@@ -2,7 +2,7 @@
 <html lang="lt">
 <head>
   <meta charset="UTF-8">
-  <title>Atspėk ežero pavadinimą</title>
+  <title>Upių vietos viktorina</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
     body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
@@ -11,23 +11,14 @@
       padding: 10px;
       background: #f0f0f0;
     }
-    #result {
-      margin-top: 10px;
-      font-weight: bold;
-    }
-    select {
-      padding: 5px;
-      font-size: 16px;
-    }
+    #question { font-size: 18px; }
+    #result { margin-top: 10px; font-weight: bold; }
   </style>
 </head>
 <body>
 
 <div id="quiz">
-  <div><strong>Kas čia per ežeras?</strong></div>
-  <select id="guessSelect">
-    <option value="">-- Pasirinkti --</option>
-  </select>
+  <div id="question">Klausimas kraunasi...</div>
   <div id="result"></div>
 </div>
 <div id="map"></div>
@@ -35,62 +26,89 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
   const map = L.map('map').setView([55.2, 24.0], 7);
-
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap',
   }).addTo(map);
 
-  const lakes = [
-    { name: "Drūkšiai", coords: [55.5936, 26.3303] },
-    { name: "Dusia", coords: [54.2839, 23.6878] },
-    { name: "Metelys", coords: [54.3167, 23.6833] },
-    { name: "Žuvintas", coords: [54.3833, 23.8667] },
-    { name: "Sartai", coords: [55.7481, 25.7794] },
-    { name: "Plateliai", coords: [56.0500, 21.8500] },
-    { name: "Lūkstas", coords: [55.6333, 22.3000] },
-    { name: "Vištytis", coords: [54.4500, 22.7333] },
-    { name: "Asveja", coords: [55.0900, 25.9433] },
-    { name: "Tauragnas", coords: [55.5170, 25.8500] }
+  const rivers = [
+    { name: "Nemunas", coords: [54.6872, 25.2797] },
+    { name: "Neris", coords: [54.9000, 23.9000] },
+    { name: "Šventoji", coords: [55.5000, 25.0000] },
+    { name: "Venta", coords: [56.3333, 22.0000] },
+    { name: "Merkys", coords: [54.1833, 24.6667] },
+    { name: "Minija", coords: [55.7000, 21.6000] },
+    { name: "Jūra", coords: [55.3000, 22.3000] },
+    { name: "Dubysa", coords: [55.4000, 23.0000] },
+    { name: "Nevėžis", coords: [55.3000, 23.9000] },
+    { name: "Žeimena", coords: [55.2000, 26.0000] }
   ];
 
-  let currentLake = null;
-  let marker = null;
+  let currentRiver = null;
+  let guessMarker = null;
+  let answerMarker = null;
 
-  const guessSelect = document.getElementById("guessSelect");
-  const resultDiv = document.getElementById("result");
+  function toRad(deg) {
+    return deg * Math.PI / 180;
+  }
 
-  // Užpildyti pasirinkimus
-  lakes.forEach(lake => {
-    const opt = document.createElement("option");
-    opt.value = lake.name;
-    opt.textContent = lake.name;
-    guessSelect.appendChild(opt);
-  });
-
-  guessSelect.addEventListener("change", function () {
-    if (!currentLake) return;
-
-    const guess = this.value;
-    if (guess === currentLake.name) {
-      resultDiv.innerHTML = "✅ Teisingai!";
-    } else {
-      resultDiv.innerHTML = `❌ Neteisingai. Tai buvo <strong>${currentLake.name}</strong>.`;
-    }
-
-    // Po 5 sekundžių – naujas ežeras
-    setTimeout(startRound, 5000);
-  });
+  function getDistanceKm(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat/2) ** 2 +
+              Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+              Math.sin(dLon/2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
 
   function startRound() {
-    resultDiv.textContent = "";
-    guessSelect.value = "";
+    if (guessMarker) map.removeLayer(guessMarker);
+    if (answerMarker) map.removeLayer(answerMarker);
+    document.getElementById("result").textContent = "";
 
-    if (marker) map.removeLayer(marker);
-
-    currentLake = lakes[Math.floor(Math.random() * lakes.length)];
-    marker = L.marker(currentLake.coords).addTo(map);
-    marker.bindPopup("Koks tai ežeras?").openPopup();
+    currentRiver = rivers[Math.floor(Math.random() * rivers.length)];
+    document.getElementById("question").innerHTML =
+      `Kur yra upė: <strong>${currentRiver.name}</strong>? Spausk du kartus.`;
   }
+
+  map.on('click', function(e) {
+    if (guessMarker) map.removeLayer(guessMarker);
+
+    guessMarker = L.marker(e.latlng).addTo(map);
+    guessMarker.bindPopup("Spustelėk dar kartą, kad patvirtintum").openPopup();
+
+    guessMarker.on('click', function() {
+      const guessedLat = e.latlng.lat;
+      const guessedLng = e.latlng.lng;
+      const correctLat = currentRiver.coords[0];
+      const correctLng = currentRiver.coords[1];
+
+      const distance = getDistanceKm(guessedLat, guessedLng, correctLat, correctLng);
+
+      // Rodyti teisingą vietą
+      answerMarker = L.marker(currentRiver.coords, {
+        icon: L.icon({
+          iconUrl: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+          iconSize: [32, 32],
+          iconAnchor: [16, 32]
+        })
+      }).addTo(map).bindPopup(`Teisinga vieta: ${currentRiver.name}`).openPopup();
+
+      // Taškai
+      let score = 0;
+      if (distance < 5) score = 10;
+      else if (distance < 15) score = 8;
+      else if (distance < 30) score = 6;
+      else if (distance < 50) score = 4;
+      else if (distance < 100) score = 2;
+      else score = 0;
+
+      document.getElementById("result").innerHTML =
+        `📏 Atstumas: ${distance.toFixed(1)} km<br>⭐ Taškai: ${score} / 10`;
+
+      setTimeout(startRound, 5000);
+    });
+  });
 
   startRound();
 </script>
