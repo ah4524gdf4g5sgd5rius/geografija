@@ -2,24 +2,18 @@
 <html lang="lt">
 <head>
   <meta charset="UTF-8">
-  <title>Lietuvos upių viktorina</title>
+  <title>Kur yra ežeras? - Viktorinų žemėlapis</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
+    body { font-family: Arial, sans-serif; }
     #map { height: 75vh; width: 100%; }
     #quiz {
-      padding: 15px;
-      font-family: Arial, sans-serif;
+      padding: 10px;
+      background-color: #f2f2f2;
     }
-    #quiz h2 {
-      margin-top: 10px;
-    }
-    #quiz input[type="text"] {
-      padding: 6px;
-      width: 250px;
-    }
-    #quiz button {
-      padding: 6px 12px;
-      margin-left: 10px;
+    #question {
+      font-size: 1.2em;
+      margin-bottom: 10px;
     }
     #result {
       margin-top: 10px;
@@ -29,81 +23,106 @@
 </head>
 <body>
 
-<div id="map"></div>
-
 <div id="quiz">
-  <h2>Upių viktorina</h2>
-  <p>Spėk, kokia čia upė pažymėta žemėlapyje:</p>
-  <input type="text" id="answer" placeholder="Įvesk upės pavadinimą">
-  <button onclick="checkAnswer()">Tikrinti</button>
+  <div id="question">Kur yra ežeras: <strong id="lakeName">...</strong>?</div>
   <div id="result"></div>
 </div>
+<div id="map"></div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
-  const map = L.map('map').setView([55.1694, 23.8813], 7);
+  const map = L.map('map').setView([55.2, 24.0], 7);
 
   // Pagrindinis žemėlapis
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: 'Žemėlapiai © OpenStreetMap bendruomenė',
+    attribution: 'Žemėlapiai © OpenStreetMap',
   }).addTo(map);
 
-  let currentFeature = null;
-  let quizRivers = [];
-  let activeLayer = null;
+  // 10 ežerų
+  const lakes = [
+    { name: "Drūkšiai", coords: [55.5936, 26.3303] },
+    { name: "Dusia", coords: [54.2839, 23.6878] },
+    { name: "Metelys", coords: [54.3167, 23.6833] },
+    { name: "Žuvintas", coords: [54.3833, 23.8667] },
+    { name: "Sartai", coords: [55.7481, 25.7794] },
+    { name: "Plateliai", coords: [56.0500, 21.8500] },
+    { name: "Lūkstas", coords: [55.6333, 22.3000] },
+    { name: "Vištytis", coords: [54.4500, 22.7333] },
+    { name: "Asveja", coords: [55.0900, 25.9433] },
+    { name: "Tauragnas", coords: [55.5170, 25.8500] }
+  ];
 
-  // Įkeliam GeoJSON upes iš GitHub (nereikia nieko lokaliai!)
-  fetch('https://raw.githubusercontent.com/openmapdata/lithuania-rivers/main/lithuania-rivers.geojson')
-    .then(response => response.json())
-    .then(data => {
-      // Surenkam tik tas upes, kurios turi pavadinimus
-      quizRivers = data.features.filter(f => f.properties && f.properties.name);
+  let currentLake = null;
+  let guessMarker = null;
+  let answerMarker = null;
 
-      // Pradedam pirmą raundą
-      startQuiz();
-    })
-    .catch(err => {
-      alert("Nepavyko įkelti upių duomenų.");
-      console.error(err);
+  function startRound() {
+    // Išvalom viską
+    if (guessMarker) map.removeLayer(guessMarker);
+    if (answerMarker) map.removeLayer(answerMarker);
+    document.getElementById('result').textContent = "";
+
+    currentLake = lakes[Math.floor(Math.random() * lakes.length)];
+    document.getElementById('lakeName').textContent = currentLake.name;
+  }
+
+  // Skaičiuoja atstumą tarp dviejų taškų (Haversine formula)
+  function getDistanceKm(lat1, lon1, lat2, lon2) {
+    const R = 6371; // km
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) ** 2 +
+              Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+              Math.sin(dLon / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  function toRad(deg) {
+    return deg * Math.PI / 180;
+  }
+
+  map.on('click', function (e) {
+    if (guessMarker) map.removeLayer(guessMarker);
+
+    guessMarker = L.marker(e.latlng, { draggable: false }).addTo(map);
+    guessMarker.bindPopup("Spustelk antrą kartą patvirtinti").openPopup();
+
+    guessMarker.on('click', function () {
+      const userLat = e.latlng.lat;
+      const userLng = e.latlng.lng;
+      const lakeLat = currentLake.coords[0];
+      const lakeLng = currentLake.coords[1];
+
+      const distance = getDistanceKm(userLat, userLng, lakeLat, lakeLng);
+
+      // Rodyti teisingą vietą
+      answerMarker = L.marker([lakeLat, lakeLng], {
+        icon: L.icon({
+          iconUrl: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+          iconSize: [32, 32],
+          iconAnchor: [16, 32]
+        })
+      }).addTo(map).bindPopup("Teisinga vieta: " + currentLake.name);
+
+      // Skaičiuojame taškus (kuo arčiau, tuo daugiau)
+      let score = 0;
+      if (distance < 5) score = 10;
+      else if (distance < 15) score = 8;
+      else if (distance < 30) score = 6;
+      else if (distance < 50) score = 4;
+      else if (distance < 100) score = 2;
+      else score = 0;
+
+      const resultText = `Atstumas: ${distance.toFixed(1)} km. Taškai: ${score}/10.`;
+
+      document.getElementById('result').innerHTML = resultText;
+
+      setTimeout(startRound, 5000);
     });
+  });
 
-  function startQuiz() {
-    // Išvalom ankstesnį sluoksnį, jei yra
-    if (activeLayer) {
-      map.removeLayer(activeLayer);
-    }
-
-    // Parenkam atsitiktinę upę
-    currentFeature = quizRivers[Math.floor(Math.random() * quizRivers.length)];
-
-    // Pažymim raudonai
-    activeLayer = L.geoJSON(currentFeature, {
-      style: { color: 'red', weight: 3 }
-    }).addTo(map);
-
-    map.fitBounds(activeLayer.getBounds());
-  }
-
-  function checkAnswer() {
-    const userInput = document.getElementById('answer').value.trim().toLowerCase();
-    const correctAnswer = currentFeature.properties.name.toLowerCase();
-    const resultDiv = document.getElementById('result');
-
-    if (userInput === correctAnswer) {
-      resultDiv.style.color = 'green';
-      resultDiv.textContent = '✅ Teisingai! Tai ' + currentFeature.properties.name + '.';
-    } else {
-      resultDiv.style.color = 'red';
-      resultDiv.textContent = '❌ Neteisingai. Tai buvo: ' + currentFeature.properties.name + '.';
-    }
-
-    // Automatiškai naujas klausimas po 4 sek.
-    setTimeout(() => {
-      document.getElementById('answer').value = '';
-      resultDiv.textContent = '';
-      startQuiz();
-    }, 4000);
-  }
+  startRound();
 </script>
 
 </body>
