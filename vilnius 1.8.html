@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+  <meta charset="UTF-8">
+  <title>Vilniaus Tiltai</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <style>
+    html, body, #map { height: 100%; margin: 0; padding: 0; }
+    .popup-img { max-width: 100%; height: auto; margin-top: 5px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map').setView([54.69, 25.27], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    const bridges = [
+      {
+        name: "Baltasis tiltas",
+        coords: [54.692752, 25.272488],
+        info: "Pėsčiųjų tiltas per Neries upę Vilniuje. Jungia Naujamiesčio ir Šnipiškių rajonus. Ilgis 240 m, plotis 6 m, aukštis 11,4 m. Pastatytas 1995 m. Projekto autorius architektas Algimantas Nasvytis. 2010 m. ant tilto sumontuota skulptūra „Spindulys–Ietis“. GPS: 54°41′35″ 25°16′23″",
+        image: "https://upload.wikimedia.org/wikipedia/commons/9/9e/Baltasis_tiltas_by_Augustas_Didzgalvis.jpg"
+      },
+      {
+        name: "Bernardinų tiltas",
+        coords: [54.6817, 25.2936],
+        info: "Metalinis santvarinis tiltas per Vilnią. Jungia Malūnų ir Maironio gatves. Pastatytas 1880 m., rekonstruotas 1956 m. Ilgis 18,07 m, plotis 8,4 m.",
+        image: "https://upload.wikimedia.org/wikipedia/commons/9/90/Bernardinu_bridge_in_Vilnius.JPG"
+      },
+      {
+        name: "Bukčių tiltas",
+        coords: [54.6675, 25.2275],
+        info: "Neeksploatuojamas pėsčiųjų tiltas per Nerį. Pastatytas 1957 m. Ilgis apie 100 m, plotis 5 m. Uždarytas nuo 2008 m.",
+        image: "https://upload.wikimedia.org/wikipedia/commons/6/62/Buk%C4%8Di%C5%B3_ir_technologinis_tiltai.JPG"
+      },
+      {
+        name: "Fluxus tiltas",
+        coords: [54.6822, 25.2956],
+        info: "Pėsčiųjų tiltas per Vilnią, jungiantis Vilniaus dailės akademiją su Bernardinų sodu. Pastatytas 1984 m. Vienintelis dengtas pėsčiųjų tiltas Lietuvoje.",
+        image: "https://upload.wikimedia.org/wikipedia/commons/5/54/Dailes_akademijos_tiltas.JPG"
+      },
+      {
+        name: "Gariūnų tiltas",
+        coords: [54.6700, 25.1831],
+        info: "Tiltas per Nerį. Pastatytas 1986 m. Ilgis 170 m, plotis 35,32 m. 2011 m. buvo rekonstruotas.",
+        image: "https://upload.wikimedia.org/wikipedia/commons/d/d5/Gariunu_tiltas.JPG"
+      },
+      {
+        name: "Geležinio Vilko tiltas",
+        coords: [54.695679, 25.263936],
+        info: "Tiltas per Nerį. Pastatytas 1979 m., rekonstruotas 1999 m. Ilgis 260 m, plotis 38,8 m, aukštis 12 m.",
+        image: "https://upload.wikimedia.org/wikipedia/commons/9/9d/Geleziako_tiltas_by_Augustas_Didzgalvis.jpg"
+      },
+      {
+        name: "Karaliaus Mindaugo tiltas",
+        coords: [54.6890, 25.2881],
+        info: "Tiltas per Nerį, jungiantis Žirmūnus su Senamiesčiu. Pastatytas 2003 m. Ilgis 101 m, plotis 19,7 m.",
+        image: "https://upload.wikimedia.org/wikipedia/commons/c/c2/Mindaugo_tiltas_by_Augustas_Didzgalvis.jpg"
+      },
+      {
+        name: "Kaklaraiščių tiltas",
+        coords: [54.6903, 25.2006],
+        info: "Pėsčiųjų ir dviratininkų tiltas Karoliniškėse per Vakarinį aplinkkelį. Ilgis apie 48 m. Pastatytas 2013 m. Garsėja šimtais kaklaraiščių.",
+        image: "https://media.lrytas.lt/images/2020/03/03/134613461-8e1ddedc-081b-4625-aba7-a97a81fdc1f2.jpg"
+      },
+      {
+        name: "Kazbiejų tiltas",
+        coords: [54.61486, 25.1347],
+        info: "Vieno tarpatramio santvarinis tiltas per Vokę. Pastatytas apie 1935 m. Ilgis 27 m. Kultūros vertybė nuo 2018 m.",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Kazbeju_tiltas2018_01.jpg/250px-Kazbeju_tiltas2018_01.jpg"
+      },
+      {
+        name: "Liubarto tiltas",
+        coords: [54.6889, 25.2586],
+        info: "Tiltas per Nerį, pastatytas 1987 m., ilgis 205 m, plotis 23 m. Aukštis 14,8 m. Metalinė konstrukcija.",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/Liubarto_tiltas%2C_2006-08-08.jpg/250px-Liubarto_tiltas%2C_2006-08-08.jpg"
+      },
+      
+      {
+        name: "Pilies tiltas",
+        coords: [54.688700, 25.292658],
+        info: "Tiltas per Vilnią, pastatytas 1893 m. Ilgis 34 m, plotis 20 m, aukštis 7,7 m. Buvo žinomas kaip Antakalnio arba Artilerijos tiltas.",
+        image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTDfLAtTCcQcJ9pWAT66f4RO68HUJA0WStQUg&s"
+      },
+      {
+        name: "Šilo tiltas",
+        coords: [54.705481, 25.306796],
+        info: "Tiltas jungia Antakalnį ir Žirmūnus. Dabartinis pastatytas 1999 m. Ilgis ~100 m.",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Silo_tiltas_by_Augustas_Didzgalvis.jpg/250px-Silo_tiltas_by_Augustas_Didzgalvis.jpg"
+      },
+      {
+        name: "Trakų Vokės geležinkelio tiltas",
+        coords: [54.6333, 25.1231],
+        info: "Vienas aukščiausių geležinkelio tiltų Lietuvoje. Pastatytas 1924 m., aukštis 25,2 m, ilgis 92,7 m.",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Baltosios_Vokes_gelezinkelio_tiltas.JPG/250px-Baltosios_Vokes_gelezinkelio_tiltas.JPG"
+      },
+      {
+        name: "Užupio tiltas",
+        coords: [54.6806, 25.2925],
+        info: "Tiltas per Vilnią, pastatytas 1901 m. Ilgis 19,3 m, plotis 6,5 m. Vienas seniausių tilto vietų mieste.",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/Uzupio-tiltas.jpg/250px-Uzupio-tiltas.jpg"
+      },
+      {
+        name: "Valakampių tiltas",
+        coords: [54.7264, 25.3122],
+        info: "Ilgiausias Vilniaus tiltas – 341,5 m. Gelžbetoninis, pastatytas 1972 m.",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Valakampiu_by_Augustas_Didzgalvis.jpg/250px-Valakampiu_by_Augustas_Didzgalvis.jpg"
+      },
+      {
+        name: "Vingio parko tiltas",
+        coords: [54.6911, 25.2425],
+        info: "Plieninis pėsčiųjų tiltas per Nerį, pastatytas 1985 m. Ilgis 230,55 m, plotis 6,5 m.",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fe/Vingio_parko_tiltas_by_Augustas_Didzgalvis.jpg/250px-Vingio_parko_tiltas_by_Augustas_Didzgalvis.jpg"
+      },
+      {
+        name: "Žaliasis tiltas",
+        coords: [54.691435, 25.279940],
+        info: "Tiltas per Nerį. Pastatytas 1952 m., ilgis 102,9 m, plotis 24 m, aukštis 15 m. Turtinga istorija nuo 1386 m.",
+        image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR-9zYkQ7MML1VNuhMzPMYPj3m0PEzg0WPyzA&s"
+      },
+      {
+        name: "Žirmūnų tiltas",
+        coords: [54.6944, 25.3022],
+        info: "Gelžbetoninis automobilių ir pėsčiųjų tiltas. Ilgis 210,4 m, plotis 20,8 m, aukštis 18 m. Pastatytas 1966 m.",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/%C5%BDirm%C5%ABnai_Bridge.jpg/330px-%C5%BDirm%C5%ABnai_Bridge.jpg"
+      },
+      {
+        name: "Žvėryno tiltas",
+        coords: [54.690520, 25.258797],
+        info: "Tiltas per Nerį, pastatytas 1906 m. Ilgis 103,1 m, plotis 11,35 m, aukštis 11 m. Buvo vadintas Nikolajaus tiltu.",
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Zverynas_bridge_June_2022.jpg/250px-Zverynas_bridge_June_2022.jpg"
+      },
+{
+  name: "Paplaujos tiltas",
+  coords: [54.679167, 25.297778],
+  info: "Tiltas per Vilnią Vilniuje, jungia Aukštaičių ir Paupio gatves. Pastatytas 1882 m. Metalinis santvarinis tiltas. Ilgis 20,25 m, plotis 7,8 m. Aukštis 4,6 m. 1955 m. atliktas kapitalinis remontas. Įtrauktas į Kultūros vertybių registrą 1996 m.",
+  image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSokw1uB1PFFpVqGj3rhXIuVH9B14QofIvz7Q&s"
+},
+{
+  name: "Tiltas per Vilnelę",
+  coords: [54.678384, 25.336074],
+  info: "Tiltas per Vilnelę, tikslesnė informacija neapibrėžta.",
+  image: "https://i.ibb.co/FqqQ4BMV/Untitled.png"
+},
+{
+  name: "Drujos tiltas",
+  coords: [54.679452, 25.312192],
+  info: "Drujos tiltas, tikslesnė informacija neapibrėžta.",
+  image: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Drujos_tiltas.JPG/960px-Drujos_tiltas.JPG"
+},
+{
+  name: "Markučių pėščiųjų tiltas",
+  coords: [54.677613, 25.322505],
+  info: "Pėščiųjų tiltas Markučiuose.",
+  image: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Tiltas_per_Vilni%C4%85_tarp_Belmonto_ir_Marku%C4%8Di%C5%B3.JPG/1280px-Tiltas_per_Vilni%C4%85_tarp_Belmonto_ir_Marku%C4%8Di%C5%B3.JPG"
+},
+{
+  name: "Belmonto užtvankos tiltas",
+  coords: [54.685464, 25.357602],
+  info: "Tiltas per Belmonto užtvanką.",
+  image: "https://sa.lt/wp-content/uploads/belmonto_uztvanka_k_maciuno_nuotr.jpg"
+},
+{
+  name: "Pučkorių pėščiųjų tiltas",
+  coords: [54.688871, 25.358081],
+  info: "Pėščiųjų tiltas Pučkoriuose.",
+  image: "https://i.ibb.co/FkBwkBFP/Untitled.png"
+},
+{
+  name: "S. Batoro II tiltas",
+  coords: [54.691617, 25.361618],
+  info: "Antrasis S. Batoro tiltas.",
+  image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/S._Batoro_gatv%C4%97s_II_tiltas.JPG/2560px-S._Batoro_gatv%C4%97s_II_tiltas.JPG"
+},
+{
+  name: "Rokantiškių tvenkinio tiltas",
+  coords: [54.696659, 25.380071],
+  info: "Tiltas ties Rokantiškių tvenkiniu.",
+  image: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Rokanti%C5%A1ki%C5%B3_tvenkinio_tiltas.JPG/960px-Rokanti%C5%A1ki%C5%B3_tvenkinio_tiltas.JPG"
+},
+{
+  name: "Naujosios Vilnios geležinkelio tiltas",
+  coords: [54.692868, 25.392076],
+  info: "Geležinkelio tiltas Naujojoje Vilnioje.",
+  image: "https://www.deltanova.lt/uploads/ECB/content_1492153203/20100407115811_800x600_3647.jpg"
+},
+{
+  name: "Šiaurės gatvės tiltas",
+  coords: [54.691946, 25.397483],
+  info: "Naujosios Vilnios santvarinis tiltas. Tiltas per Vilnios upę pastatytas maždaug 1935 m. Tilto analogas - Maurzyce tiltas Lenkijoje, taip pat Kazbėjų tiltas per Vokę Vilniuje ir tltas Nemenčinėje per Nerį. Tiltas išsiskiria vieno tarpatramio santvarine konstrukcija. Jo prototipą suprojektavo žymus visame pasaulyje lenkų architektas, inžinierius Stefan Bryła.",
+  image: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/%C5%A0iaur%C4%97s_g._tiltas.JPG/960px-%C5%A0iaur%C4%97s_g._tiltas.JPG"
+},
+{
+  name: "S. Batoro I tiltas",
+  coords: [54.691380, 25.406658],
+  info: "Tiltas per Vilnelę netoli Belmonto",
+  image: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Stepono_Batoro_gatv%C4%97s_I_tiltas.JPG/250px-Stepono_Batoro_gatv%C4%97s_I_tiltas.JPG"
+},
+{
+  name: "Pergalės tiltas",
+  coords: [54.691278, 25.411040],
+  info: "Tiltas per Vilnelę Naujoje Vilnioje",
+  image: "https://i.ibb.co/8D913bnP/Untitled.png"
+},
+{
+  name: "Bernardinų sodų pėščiųjų tiltas",
+  coords: [54.685378, 25.295976],
+  info: "Pėščiųjų tiltas Bernardinų sode.",
+  image: "https://upload.wikimedia.org/wikipedia/lt/f/fe/Tiltas_Bernardin%C5%B3_sode.JPG"
+},
+
+
+{
+  name: "Bernardinų sodų pėščiųjų tiltas",
+  coords: [54.685378, 25.295976],
+  info: "Parko tiltas jungia Bernardinų sodą ir Kalnų parką, kurioje papėdėje įsikūrusi Nyderlandų karalystės ambasados rezidencija. Tiltas yra 20 m ilgio ir 3 m pločio. Tarpukariu dėl savo konstrukcijos šis tiltas buvo vadintas Kartuvėmis (Szubienica).1827-1828 m. šioje vietoje buvo architekto Karolio Podčašinskio suprojektuotas ir pastatytas Egiptietiškas tiltelis. Jis buvo pakabintas ant masyvių geležinių grandinių, kurias laikė du iš akmenų ir plytų sumūryti, baltai tinkuoti pilonai su praėjimo angomis",
+  image: "https://upload.wikimedia.org/wikipedia/lt/f/fe/Tiltas_Bernardin%C5%B3_sode.JPG"
+},
+{
+  name: "Bevardis",
+  coords: [54.682426, 25.294031],
+  info: "Šiame Vilnelės vagos posūkyje kažkada upę kirto panelių bernardinių Švč. Mergelės Marijos Nekalto Prasidėjimo vienuolyno korpusas, kurio arkomis galima buvo nueiti į Šv. Pranciškaus Asyžiečio bažnyčią. Sunykus pastatui, 1839 m. buvo pastatytas greta kitas tiltas, projekto autorius poručikas Dilobilis. Sovietmečiu statant tuometinio Dailės instituto korpusą, statybinių medžiagų privežimui buvo pastatytas dabartinis tiltas.",
+  image: "https://photos.trip.lt/372dfcff-6271-4319-b181-e0eb36d0e2ee/orig"
+},
+{
+  name: "Montmarto tiltas",
+  coords: [54.679257, 25.295681],
+  info: "",
+  image: "https://upload.wikimedia.org/wikipedia/commons/0/09/Monmartro_tiltas.JPG"
+},
+{
+  name: "Užupio Paupio tiltas",
+  coords: [54.680047, 25.304011],
+  info: "",
+  image: "https://vilniauskrastas.lt/wp-content/uploads/2020/01/u%C5%BEupis-tiltas-e1579503631559-600x375.jpg"
+},
+
+{
+  name: "Abiejų tautų respublikos tiltas",
+  coords: [54.626063, 25.121120],
+  info: "",
+  image: "https://i.ibb.co/XxpmQTgQ/Untitled.png"
+},
+{
+  name: "Vaidotų malūno tiltas-užvanka",
+  coords: [54.598447, 25.175796],
+  info: "",
+  image: "https://i.ibb.co/wFV5jrkv/Untitled.png"
+},
+
+{
+  name: "Pagirių tiltas",
+  coords: [54.583786, 25.207911],
+  info: "",
+  image: "https://i.ibb.co/ym4TZnxF/Untitled-1.png"
+},
+{
+  name: "Belmonto-Pučkorių  tiltas",
+  coords: [54.685537, 25.356673],
+  info: "Belmonto-Pučkorių kabantis tiltas per Vilnią",
+  image: "https://www.pamatyklietuvoje.lt/api/Photo/262d3c16-43c8-4a1a-a85a-a7cc3c0ddffd/0/960/460/crop"
+},
+{
+  name: "Lazdynų tiltas",
+  coords: [54.670343, 25.230126],
+  info: "Tiltas per Nerį. Pastatytas 1969 m., rekonstruotas 2009–2010 m. Platinant padidėjo iki 8 juostų. Ilgis 233 m, plotis 39 m.",
+  image: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Tukstantmecio_by_Augustas_Didzgalvis.jpg/250px-Tukstantmecio_by_Augustas_Didzgalvis.jpg"
+},
+{
+  name: "Balandžio 1-osios tiltas",
+  coords: [54.679620, 25.311376],
+  info: "Paupio g., jungia Paupį ir Užupį",
+  image: "https://scontent-hel3-1.xx.fbcdn.net/v/t39.30808-6/345141203_591676092937909_5960602629586194904_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=127cfc&_nc_ohc=cHgqPadqNU4Q7kNvwFR3kFB&_nc_oc=Adlz90NYtBkus-3C4631_5TKPnqhtoOt0eE3Sg7UokFtiyjpC0oN5cJ14R4TjL7mTcuyeE3HA3IxQo5yQ-mw3xBF&_nc_zt=23&_nc_ht=scontent-hel3-1.xx&_nc_gid=bk8An2_F2Ijku9m97bZBdQ&oh=00_AfN9zk1gMc26T-Pl2Fc3VyZ64wzZC1yBLslYBSDbesvhiQ&oe=684E752F"
+},
+{
+name: "Belmonto-Tuputiškių tiltas",
+  coords: [54.682477, 25.355317],
+  info: "Belmonto-Tuputiškių kabantis tiltas per Vilnią",
+  image: "https://www.pamatyklietuvoje.lt/api/Photo/06566972-4423-40c7-bf7d-1c90efcf5af2/0/1200/848/crop"
+}
+
+    ];
+
+    bridges.forEach(bridge => {
+      const popup = `<strong>${bridge.name}</strong><br>${bridge.info}${bridge.image ? `<br><img class="popup-img" src="${bridge.image}" alt="${bridge.name}">` : ''}`;
+      L.marker(bridge.coords).addTo(map).bindPopup(popup);
+    });
+  </script>
+</body>
+</html>
